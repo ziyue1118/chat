@@ -1,0 +1,143 @@
+<script src = "/socket.io/socket.io.js"></script>
+<script src = "https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+
+<script>
+    
+	var URL = window.location.protocol + "//" +window.location.host;
+	console.log("Connecting to" +URL);
+	var socket = io.connect(URL);
+	var client_name;
+	var client_chatroom;
+	socket.on('connect', function(){
+		client_name= prompt("What's your name?");
+		socket.emit('adduser',client_name);
+	});
+	socket.on('updatechat',function(username,data){
+		$('#conversation').append('<b>'+username+':</b>'+data + '<br>');
+		//client_name = username;
+	});
+	socket.on('updateprivatechat',function(username,data){
+		$('#privatetalk').append('<b>'+username+':</b>'+ data + '<br>');
+	});
+	socket.on('updatehistorychat', function(username,data,time){
+		$('#histtalk').append('<b>'+ username +':</b>'+ data + '  ' + time +'<br>');
+	});
+
+    socket.on('confirmation',function(data, chatroom){
+    	$('#privatetalk').append('<b>'+data+' wants to talk to you</b>'+ '<br>');
+    	var cflage = confirm(data + ' wants to talk to you?'); 
+    	if (cflage === true){
+    		socket.emit('joinroom', chatroom);
+    		document.getElementById("ptalk").style.display = 'block';
+
+    	} 
+    	else {
+    		socket.emit('pm2', data, client_name);
+    	}
+    }); 
+	
+
+	socket.on('updateusers',function(data){
+		$('#users').empty();
+		$.each(data, function(key,value){
+			$('#users').append('<div>'+key+'</div>');
+		});
+	});
+
+	$(function(){
+		
+		$('#users').on('click', 'div', function(){
+			
+			var name_talk_to = $(this).html();
+			var room = client_name + '_' + name_talk_to;
+			client_chatroom = room;
+			console.log(client_chatroom);
+			$(this).css("color","red");
+			document.getElementById("ptalk").style.display = 'block';
+			socket.emit('pm', name_talk_to, client_name, room);
+			socket.emit('joinroom', room);
+		});
+	});
+
+
+	$(function(){
+		$('#datasend').click(function(){
+			var message = $('#data').val();
+			$('#data').val('');
+			socket.emit('sendchat',message);
+		});
+		$('#data').keypress(function(e){
+			if(e.which == 13){
+				$(this).blur();
+				$('#datasend').focus().click();
+			}
+
+		});
+
+	});
+	 $(function(){
+    	$('#chathistory').click(function(){
+    		
+    		socket.emit('history', client_name, client_chatroom);
+    	
+		});
+		
+    });
+    
+    $(function(){
+    	$('#roomjoin').click(function(){
+    		var room = $('#room').val();
+    		$('#room').val('');
+    		socket.emit('joinroom',room);
+		});
+		$('#room').keypress(function(e){
+			if(e.which == 13){
+				$(this).blur();
+				$('#roomjoin').focus().click();
+			}
+		});
+    });
+
+    $(function(){
+    	$('#roomleave').click(function(){
+    		
+    		socket.emit('leaveroom');
+    		client_chatroom = '';
+    		document.getElementById("ptalk").style.display = 'none';
+
+		});
+		$('#room').keypress(function(e){
+			if(e.which == 13){
+				$(this).blur();
+				$('#roomleave').focus().click();
+			}
+		});
+    });
+
+</script>
+<div style= "float:left; width:100px; border-right:1px solid black; height:300px; padding:10px; overflow:scroll-y;">
+	<b>USERS</b>
+	<div id="users"></div>
+</div>
+
+<div style = "float:left; width:300px; height:250px; overflow:scroll-y; padding:10px;">
+	<div id="conversation"></div>
+	<input id = "data" style = "width:200px"/>
+	<input type = "button" id="datasend" value="send"/>
+
+	<input id = "room" style = "width:200px"/>
+	<input type = "button" id="roomjoin" value="join"/>
+	<input type = "button" id="roomleave"value="leave"/>
+</div>
+
+<div id="ptalk" style = "float:left; width:300px; height:200px; overflow:scroll-y; padding:10px;display :none">
+	<!-- <b>ROOM USERS</b>
+	<div id= "roomusers"><div> -->
+	<b>PRIVATE TALK</b>
+	<div id= "privatetalk" ></div>
+	<input type="button" id = "chathistory" value="history"/>
+	
+	<br><b>HISTORY TALK</b>
+	<div id= "histtalk"></div>
+
+</div>
