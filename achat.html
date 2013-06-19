@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html ng-app="chatapp">
+<head>
+	<script src = "/socket.io/socket.io.js"></script>
+	<script src = "https://ajax.googleapis.com/ajax/libs/angularjs/1.1.5/angular.min.js"></script>
+	<script src = "js/bootstrap.min.js"></script>
+	<script src = "service.js"></script>
+	<link 	href = "css/bootstrap.min.css" rel="stylesheet"/>
+	<link 	href = "css/bootstrap-responsive.css" rel="stylesheet"/>
+	<link 	href= "css/style.css" rel="stylesheet"/>
+</head>
+<body class="body">
+	<div class="header">
+		<div class="site-title"><strong>ZyChat</strong></div>
+	</div>
+
+	<div class="nav-container">
+		<div class="navbar">
+			<div class="navbar-inner">
+				<ul class="nav">
+					<li><a href="#">Home</a></li>
+					<li><a href="#">Messages</a><span class="bubble">15</span></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<div ng-controller="mainCtrl">
+		<div class = "user-container">
+			<b>USERS</b>
+			<div id="users" ></div>
+			<!-- <input type ="text" ng-model ="user.client_name"/> -->
+			<div ng-repeat ="user in users">
+				<ul>
+					<li ng-click = "openprivatetalk(user)">{{user}}</li>
+				</ul>
+			</div>	
+
+		</div>
+
+
+
+		<div class = "server-container">
+			<div id="conversation"></div>
+			<div ng-repeat = "conversation in conversations">
+				  <b>{{conversation.username}}: </b>{{conversation.message}} 
+			</div>
+			<input type = "text" id = "data" style = "width:200px; margin-top:10px" placeholder="your message" ng-model="datasentmsg" ng-keydown="keypress($event)" ng-show = "ispublic"/>
+			<button id="datasend" class= "btn btn-success" type="button" ng-click = "sendmessage()" ng-show="ispublic">send</button>
+			
+		</div>
+
+		<div id="ptalk" ng-show = "isprivate">
+
+			<b>PRIVATE TALK</b>
+			<div id = "privatetalk" ng-model = "talkornot"></div>
+		  <!-- <b>{{talkornot}}</b> wants to talk to you<br> -->
+
+			<div ng-repeat ="privatechat in privatechats">
+					<b>{{privatechat.username}}: </b>{{privatechat.message}}
+			</div>
+			<input type ="text" id ="privatedata" placeholder="your message" style = "width:200px; margin-top:10px"ng-model="privatesentmsg" ng-keydown="keypress($event)"/>
+			<button id="privatedatasend" class= "btn btn-success" type = "button" ng-click = "sendmessage()">send
+			</button>
+			<button class = "btn btn-inverse" type = "button" id="roomleave" ng-click = "leaveprivateroom()" type="button">leave</button>
+			<br><button class ="btn" id = "chathistory" type = "button" ng-click = "showhistory()">history</button>
+			<button class ="btn" id = "clearhistory" type = "button" ng-click = "clearhistory()">clear</button>
+			<br><b>HISTORY TALK(Most Recent 10)</b>
+			<div id= "histtalk" ng-model = "past"></div>
+			<div ng-repeat = "historytalk in historytalks">
+				 <b>{{historytalk.author}}: </b> {{historytalk.msg}}<br>{{historytalk.time}}<br>
+
+		</div>
+	</div>
+	<div class ="footer"></div>
+</body>
+</html>

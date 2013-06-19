@@ -1,4 +1,4 @@
-var port = 5000;
+var port = 5001;
 var app = require('express')();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
@@ -10,6 +10,13 @@ var redis = require("redis").createClient();
 console.log("listening on port "+port);
 server.listen(port);
 
+app.configure(function() {
+    app.use(require('express').logger());
+    app.use(require('express').bodyParser());
+    app.use(require('express').methodOverride());
+    app.use(app.router);
+    app.use(require('express').static(__dirname + '/bootstrap'));
+});
 app.get('/', function(req,res){
 	res.sendfile(__dirname + '/chat.html');
 
@@ -18,21 +25,20 @@ app.get('/', function(req,res){
 var usernames = {};
 var onlineClients={};
 var rooms = {};
-
+var histarr = new Array();
 io.sockets.on('connection', function (socket){
 	socket.on('sendchat',function(data){
         if (socket.room !== '' ){
             io.sockets.in(socket.room).emit('updateprivatechat',socket.username,data);
-            jsonobj = { chatroom: socket.room, time: currentTime(), msg: data };
-            redis.hmset(socket.username+"_"+currentTime(), jsonobj);
-            redis.sadd(socket.username, socket.username+"_"+currentTime()); 
+            jsonobj = { author: socket.username, time: recordtime(), msg: data };
+            redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
+            
         }
         else {
-            io.sockets.emit('updatechat',socket.username,data);
+            io.sockets.emit('updatechat',socket.username, data);
+            jsonobj = { author: socket.username, time: recordtime(), msg: data };
+            redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
             
-            jsonobj = { chatroom : '', time : currentTime(), msg : data };
-            redis.hmset(socket.username+"_"+currentTime(), jsonobj);
-            redis.sadd(socket.username, socket.username+"_"+currentTime());
         }
 	});
 	
@@ -56,43 +62,61 @@ io.sockets.on('connection', function (socket){
          io.sockets.socket(id).emit('updateprivatechat', "Sorry "+ message + " does not want to talk to you");
      });
 
-    socket.on('history',function(nm, ctrm){
+    socket.on('history',function(nm, tm, ctrm){
         console.log(nm);
+        console.log(tm);
         console.log("ctrm"+ ctrm);
-        var message;
-        var time;
-        var chatroom; 
-        redis.smembers(nm,function(err,keys){
+        var histobj = new Object();
+        var nid = onlineClients[nm];
+        var tid = onlineClients[tm];
+        var result = new Array();
+        redis.keys("*#"+ctrm+"#*", function(err,keys){
+            if(err) return console.log(err);
+            for (var i = 0; i<keys.length; i++){
+                console.log(keys[i]);
+
+                //var histarr = new Array();
+                redis.hgetall(keys[i],function(err, obj){
+                    histobj.author = obj.author;
+                    histobj.time = obj.time;
+                    histobj.message = obj.msg;
+                    histobj[i]=obj;
+                    result.push(obj);
+                    result.sort(date_sort_asc);
+                    console.log(result);
+
+                    io.sockets.socket(nid).emit('updatehistorychat', result);
+            });
             
-            if(keys != null){
-                keys.forEach(function(key){
-                    console.log(key);
-                    redis.hget(key, "chatroom",function(err,objcm){
-                        chatroom = objcm;
-                        console.log(chatroom+"##"+ctrm);
-                        if (chatroom === ctrm){
-                            redis.hget(key, "msg", function(err, objms){
-                                message = objms;
-                            });   
-                            redis.hget(key,"time",function(err,objti){
-                                time=objti;
-
-                            });   
-                            io.sockets.in(socket.room).emit('updatehistorychat',socket.username, message, time);      
-                        }    
-                    });
-
-                });
-
+          }
             
-
-            }
-
         });
-        
-        //io.sockets.emit('updatechat', socket.username, nm);
 
         
+        // redis.hgetall(keys[i], function(err,obj){
+        //             console.log(obj);
+        // });
+        // keys.forEach(function(key){
+        //                 console.log(key);
+        //                 redis.hgetall(key, function(err,obj){
+        //                     //console.log(obj);
+        //                     histobj.chatroom = obj.chatroom;
+        //                     histobj.time = obj.time;
+        //                     histobj.message = obj.msg;
+        //                     //console.log(histobj);
+
+        //                     if (histobj.chatroom === ctrm){
+        //                         histarr.push(histobj);
+        //                         console.log(histarr);
+        //                         histarr.sort(date_sort_asc);
+        //                     }
+        //                     io.sockets.socket(nid).emit('updatehistorychat',socket.username, histarr);
+        //                     // for (var piece in histarr) {
+        //                     //         console.log("msg"+ histarr[piece].message + "time" + histarr[piece].time);
+                                      
+        //                     //     }
+        //                 });
+        //             });
     });
     socket.on('joinroom', function(newroom){
         socket.room = newroom;
@@ -131,6 +155,17 @@ function currentTime() {
 }
 
 
+function recordtime(){
+    var time = new Date();
+    return time; 
+}
+
+var date_sort_asc = function (a, b) {
+  
+  if (a.time > b.time) return 1;
+  if (a.time < b.time) return -1;
+  return 0; 
+};
 
 
 

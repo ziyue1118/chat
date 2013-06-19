@@ -1,0 +1,12 @@
+.user-container{
+	float:left; 
+	width:100px; 
+	-webkit-border-radius: 50px;
+	-moz-border-radius: 50px;
+	border-radius: 50px; 
+	height:300px; 
+	padding:10px; 
+	overflow:scroll-y;
+	
+
+}

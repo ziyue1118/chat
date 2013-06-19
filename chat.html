@@ -1,6 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
 <script src = "/socket.io/socket.io.js"></script>
 <script src = "https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
-
+<script src = "js/bootstrap.min.js"></script>
+<link   href= "css/bootstrap.min.css" rel="stylesheet"/>
+<link   href= "css/bootstrap-responsive.css" rel="stylesheet"/>
+<link   href= "css/style.css" rel="stylesheet"/>
 <script>
     
 	var URL = window.location.protocol + "//" +window.location.host;
@@ -8,6 +14,7 @@
 	var socket = io.connect(URL);
 	var client_name;
 	var client_chatroom;
+	var talk_to_name;
 	socket.on('connect', function(){
 		client_name= prompt("What's your name?");
 		socket.emit('adduser',client_name);
@@ -19,13 +26,19 @@
 	socket.on('updateprivatechat',function(username,data){
 		$('#privatetalk').append('<b>'+username+':</b>'+ data + '<br>');
 	});
-	socket.on('updatehistorychat', function(username,data,time){
-		$('#histtalk').append('<b>'+ username +':</b>'+ data + '  ' + time +'<br>');
+	socket.on('updatehistorychat', function(result){
+		$('#histtalk').empty();
+		for (var piece in result){
+			
+			$('#histtalk').append('<b>'+ result[piece].author +':</b>'+ result[piece].msg + '<br>' +result[piece].time +'<br>');
+		}
 	});
 
     socket.on('confirmation',function(data, chatroom){
     	$('#privatetalk').append('<b>'+data+' wants to talk to you</b>'+ '<br>');
-    	var cflage = confirm(data + ' wants to talk to you?'); 
+    	client_chatroom = chatroom;
+    	var cflage = confirm(data + ' wants to talk to you?');
+
     	if (cflage === true){
     		socket.emit('joinroom', chatroom);
     		document.getElementById("ptalk").style.display = 'block';
@@ -48,8 +61,10 @@
 		
 		$('#users').on('click', 'div', function(){
 			
+			//$('#users div').style.color = 'black';
 			var name_talk_to = $(this).html();
 			var room = client_name + '_' + name_talk_to;
+			talk_to_name = name_talk_to;
 			client_chatroom = room;
 			console.log(client_chatroom);
 			$(this).css("color","red");
@@ -77,9 +92,10 @@
 	});
 	 $(function(){
     	$('#chathistory').click(function(){
-    		
-    		socket.emit('history', client_name, client_chatroom);
-    	
+    		$('#histtalk').empty();
+    		socket.emit('history', client_name, talk_to_name, client_chatroom);
+    		    		
+
 		});
 		
     });
@@ -115,29 +131,46 @@
     });
 
 </script>
-<div style= "float:left; width:100px; border-right:1px solid black; height:300px; padding:10px; overflow:scroll-y;">
+</head>
+<body class="body">
+<div class="header">
+<div class="site-title"><strong>Chat</strong></div>
+</div>
+
+<div class="nav-container">
+<div class="navbar">
+  <div class="navbar-inner">
+    <ul class="nav">
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Messages</a><span class="bubble">15</span></li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<div class = "user-container">
 	<b>USERS</b>
 	<div id="users"></div>
 </div>
 
-<div style = "float:left; width:300px; height:250px; overflow:scroll-y; padding:10px;">
-	<div id="conversation"></div>
-	<input id = "data" style = "width:200px"/>
-	<input type = "button" id="datasend" value="send"/>
-
-	<input id = "room" style = "width:200px"/>
-	<input type = "button" id="roomjoin" value="join"/>
-	<input type = "button" id="roomleave"value="leave"/>
+<div class = "server-container">
+<div id="conversation"></div>
+	<input type = "text" id = "data" style = "width:200px; margin-top:10px" placeholder="your message"/>
+	<button id="datasend" class= "btn btn-success" type="button">send</button>
+	<!-- <input id = "room" style = "width:200px"/>
+	<input type = "button" id="roomjoin" value="join"/> -->
+	<button class = "btn btn-inverse" type = "button" id="roomleave" type="button">leave</button>
 </div>
 
-<div id="ptalk" style = "float:left; width:300px; height:200px; overflow:scroll-y; padding:10px;display :none">
+<div id="ptalk">
 	<!-- <b>ROOM USERS</b>
 	<div id= "roomusers"><div> -->
 	<b>PRIVATE TALK</b>
 	<div id= "privatetalk" ></div>
-	<input type="button" id = "chathistory" value="history"/>
-	
+	<button class ="btn" id = "chathistory" type = "button">history</button>
 	<br><b>HISTORY TALK</b>
 	<div id= "histtalk"></div>
 
 </div>
+</body>
+</html>
