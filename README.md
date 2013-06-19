@@ -3,9 +3,9 @@ chat
 
 simple chat application
 
-1. npm install socket.io
+1. npm install
 
-2. run the redis
+2. npm install redis
 
 3. node achat.js
 
