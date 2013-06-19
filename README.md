@@ -1,7 +1,7 @@
 chat
 ====
 
-simple chat application
+simple chat application using angularjs and socket.io
 
 1. npm install
 
