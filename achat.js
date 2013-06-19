@@ -68,7 +68,7 @@ io.sockets.on('connection', function (socket){
         var histobj = new Object();
         var nid = onlineClients[nm];
         var tid = onlineClients[tm];
-        var result = new Array();
+        var result = [];
         redis.keys("*#"+ctrm+"#*", function(err,keys){
             if(err) return console.log(err);
             for (var i = 0; i<keys.length; i++){

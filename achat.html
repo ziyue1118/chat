@@ -45,8 +45,8 @@
 			<div ng-repeat = "conversation in conversations">
 				  <b>{{conversation.username}}: </b>{{conversation.message}} 
 			</div>
-			<input type = "text" id = "data" style = "width:200px; margin-top:10px" placeholder="your message" ng-model="datasentmsg" ng-keydown="keypress($event, 'datasentmsg')" ng-show = "ispublic"/>
-			<button id="datasend" class= "btn btn-success" type="button" ng-click = "sendmessage(datasentmsg)" ng-show="ispublic">send</button>
+			<input type = "text" id = "data" style = "width:200px; margin-top:10px" placeholder="your message" ng-model="datasentmsg" ng-keydown="keypress($event, 'datasentmsg')" ng-show = "!isprivate"/>
+			<button id="datasend" class= "btn btn-success" type="button" ng-click = "sendmessage(datasentmsg)" ng-show="!isprivate">send</button>
 			
 		</div>
 
@@ -59,7 +59,7 @@
 			<div ng-repeat ="privatechat in privatechats">
 					<b>{{privatechat.username}}: </b>{{privatechat.message}}
 			</div>
-			<input type ="text" id ="privatedata" placeholder="your message" style = "width:200px; margin-top:10px"ng-model="privatesentmsg" ng-keydown="keypress($event, 'privatesentmsg')"/>
+			<input type ="text" id ="privatedata" placeholder="your message" style = "width:200px; margin-top:10px" ng-model="privatesentmsg" ng-keydown="keypress($event, 'privatesentmsg')"/>
 			<button id="privatedatasend" class= "btn btn-success" type = "button" ng-click = "sendmessage('privatesentmsg')">send
 			</button>
 			<button class = "btn btn-inverse" type = "button" id="roomleave" ng-click = "leaveprivateroom()" type="button">leave</button>

@@ -12,17 +12,6 @@ app.factory('socket',function($rootScope){
 					});
 				});
 			},
-		 //  emit:function(eventName, data, callback){
-			// 	socket.emit(eventName,data,function(){
-			// 	var args = arguments;
-			// 	$rootScope.$apply(function(){
-			// 			if (callback){
-			// 				callback.apply(socket, args);
-			// 			}
-			// 		});	
-			// 	});
-			// },
-
 			emit:function(){
 				console.log(arguments);
 				var args = Array.prototype.slice.call(arguments);
@@ -50,23 +39,23 @@ app.controller('mainCtrl',function($scope, socket){
 	var client_name;
 	var talk_to_name;
 	var private_chatroom;
-	console.log("client_name: "+client_name);
-	console.log("talk_to_name: "+talk_to_name);
-	console.log("chatroom: "+private_chatroom);
+	
 	$scope.conversations = [];
 	$scope.privatechats = [];
 	$scope.historytalks = [];
 	$scope.isprivate = false;
-	$scope.ispublic  = true;
+	function isPrivate(){
+			return $scope.isprivate;
+	}
+	function isPublic(){
+		  return !isPrivate();
+	}
 
-	//var username = [];
-	//$scope.users = [];
-	//$scope.user.client_name = "hahaha";
 	socket.on('connect', function(){
 		console.log("hello world");
 		client_name= prompt("What's your name?");
 		socket.emit('adduser',client_name);
-		//$scope.users.push(client_name);
+		$scope.users.push(client_name);
 	});
 	
 	socket.on('updateusers',function(data){
@@ -86,19 +75,16 @@ app.controller('mainCtrl',function($scope, socket){
 	});
 
 	socket.on('confirmation',function(data,chatroom){
-		console.log("######"+data);
-		$scope.talkornot = data;
+		//$scope.talkornot = data;
 		talk_to_name = data;
 		private_chatroom = talk_to_name+'_'+client_name;
 		var cflag = confirm(data + ' wants to talk to you?');
 		if (cflag === true){
-			//$scope.privatechats=[];
+	
 			socket.emit('joinroom',talk_to_name, chatroom);
-			if (!$scope.isprivate){
-
-				$scope.isprivate = true;
-				$scope.ispublic  =false;
-		  }
+			if (!isPrivate()){
+				  $scope.isprivate = isPublic();
+			}
 		}
 		else {
 			socket.emit('pmdeny', data, client_name);
@@ -108,8 +94,9 @@ app.controller('mainCtrl',function($scope, socket){
   socket.on('updatehistorychat',function(result){
   	$scope.historytalks = [];
   	for (var piece in result){
-  		 $scope.historytalks.push({author: result[piece].author, msg: 
-  		 	result[piece].msg, time:result[piece].time});
+  		 $scope.historytalks.push(result[piece]);
+  		 // $scope.historytalks.push({author: result[piece].author, msg: 
+  		 // 	result[piece].msg, time:result[piece].time});
   	}
   });
 
@@ -125,24 +112,18 @@ app.controller('mainCtrl',function($scope, socket){
 	$scope.openprivatetalk = function(user){
 		talk_to_name = user;
 		private_chatroom = client_name+'_'+talk_to_name;
-		// console.log("talk_to_name: "+ talk_to_name);
-		// console.log("client_name: " + client_name);
-		// console.log("chatroom: " + private_chatroom);
 		$scope.privatechats = []; 
-		if (!$scope.isprivate){
-		 	$scope.isprivate = true;
-		 	$scope.ispublic  = false;
+		if (!isPrivate()){
+		 	 $scope.isprivate = isPublic();
 		}
-
 		socket.emit('pm', talk_to_name, client_name, private_chatroom);
 		socket.emit('joinroom', talk_to_name, private_chatroom);
 
 
 	}
 	$scope.showhistory = function(){
-		$scope.historytalks = [];
+		$scope.clearhistory();
 		socket.emit('history', client_name, talk_to_name, private_chatroom);
-
 	}
 	$scope.clearhistory = function(){
 		$scope.historytalks = [];
@@ -150,9 +131,8 @@ app.controller('mainCtrl',function($scope, socket){
 	$scope.leaveprivateroom = function(){
 		socket.emit('leaveroom');
 		private_chatroom = '';
-		if ($scope.isprivate){
-				$scope.isprivate = false;
-				$scope.ispublic = true;
+		if (isPrivate()){
+			$scope.isprivate =	isPublic();
 		}
 	}
 
