@@ -113,31 +113,14 @@ app.controller('mainCtrl',function($scope, socket){
   	}
   });
 
-	$scope.sendmessage = function(){
-		if(!$scope.isprivate){
-			socket.emit('sendchat', $scope.datasentmsg);
-			$scope.datasentmsg = '';
-		}
-		else{
-			socket.emit('sendchat', $scope.privatesentmsg);
-			$scope.privatesentmsg = '';
-		}
+	$scope.sendmessage = function(messageName){
+		socket.emit('sendchat', $scope[messageName]);
+		$scope[messageName] = '';
 	}
-	$scope.keypress = function($event){
-	 if (!$scope.isprivate){
+	$scope.keypress = function($event, messageName){
 		if ($event.keyCode === 13){
-				console.log(client_name);
-				socket.emit('sendchat', $scope.datasentmsg);
-				$scope.datasentmsg = '';
+			$scope.sendmessage(messageName);
 		}
-	}
-	 else {
-	 			if ($event.keyCode === 13){
-				console.log(client_name);
-				socket.emit('sendchat', $scope.privatesentmsg);
-				$scope.privatesentmsg = '';
-		}
-	 }
 	}
 	$scope.openprivatetalk = function(user){
 		talk_to_name = user;
