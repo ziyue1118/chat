@@ -82,9 +82,7 @@ io.sockets.on('connection', function (socket){
                 histobj[i]=obj;
                 result.push(obj);
                 result.sort(date_sort_asc);
-
                 console.log(result);
-
                 io.sockets.socket(nid).emit('updatehistorychat', result.slice(result.length-10,result.length));
             });
 

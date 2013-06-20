@@ -30,9 +30,18 @@ app.factory('socket',function($rootScope){
 				socket.emit.apply(socket, args);
 			}
 
-		
-
 		};	
+});
+
+
+app.directive("showtalk", function(){
+	return {
+			restrict: 'E',
+			template: '<div ng-repeat= "x in xs" ><b>{{x.username}}: </b>{{x.message}}</div>',
+			scope: {
+				   xs: '='
+			}
+     }
 });
 
 app.controller('mainCtrl',function($scope, socket){
@@ -65,7 +74,7 @@ app.controller('mainCtrl',function($scope, socket){
 			 $scope.users.push(key);
 		}
 	});
-
+  
 	socket.on('updatechat',function(username, data){
 		$scope.conversations.push({username:username, message:data});
 	});
@@ -75,7 +84,6 @@ app.controller('mainCtrl',function($scope, socket){
 	});
 
 	socket.on('confirmation',function(data,chatroom){
-		//$scope.talkornot = data;
 		talk_to_name = data;
 		private_chatroom = talk_to_name+'_'+client_name;
 		var cflag = confirm(data + ' wants to talk to you?');
