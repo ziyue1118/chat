@@ -29,7 +29,6 @@
 		<div class = "user-container">
 			<b>USERS</b>
 			<div id="users" ></div>
-			<!-- <input type ="text" ng-model ="user.client_name"/> -->
 			<div ng-repeat ="user in users">
 				<ul>
 					<li ng-click = "openprivatetalk(user)">{{user}}</li>
@@ -43,10 +42,9 @@
 		<div class = "server-container">
 			<div id="conversation"></div>
 			<showtalk xs="conversations"></showtalk>
-		
-			<input type = "text" id = "data" style = "width:200px; margin-top:10px" placeholder="your message" ng-model="datasentmsg" ng-keydown="keypress($event, 'datasentmsg')" ng-show = "!isprivate"/>
-			<button id="datasend" class= "btn btn-success" type="button" ng-click = "sendmessage(datasentmsg)" ng-show="!isprivate">send</button>
-			
+		  <div id="ctalk" ng-show = "!isprivate">
+		  <datasend y ="public"></datasend>	
+			</div>
 		</div>
 
 		<div id="ptalk" ng-show = "isprivate">
@@ -54,21 +52,15 @@
 			<b>PRIVATE TALK</b>
 			<div id = "privatetalk"></div>
 		  <showtalk xs= "privatechats"></showtalk>
-
+		  <datasend y = "private"></datasend>
 			
-			<input type ="text" id ="privatedata" placeholder="your message" style = "width:200px; margin-top:10px" ng-model="privatesentmsg" ng-keydown="keypress($event, 'privatesentmsg')"/>
-			
-			<button id="privatedatasend" class= "btn btn-success" type = "button" ng-click = "sendmessage('privatesentmsg')">send
-			</button>
 			<button class = "btn btn-inverse" type = "button" id="roomleave" ng-click = "leaveprivateroom()" type="button">leave</button>
 			
 			<br>
 			<button class ="btn" id = "chathistory" type = "button" ng-click = "showhistory()">history</button>
 			<button class ="btn" id = "clearhistory" type = "button" ng-click = "clearhistory()">clear</button>
-			
 			<br><b>HISTORY TALK(Most Recent 10)</b>
 			<div id= "histtalk"></div>
-			
 			<div ng-repeat = "historytalk in historytalks">
 				 <b> {{historytalk.author}}: </b> {{historytalk.msg}} <br>{{historytalk.time}}<br>
 			</div>

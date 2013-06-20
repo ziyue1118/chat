@@ -23,7 +23,7 @@ app.get('/', function(req,res){
 var usernames = {};
 var onlineClients={};
 var rooms = {};
-var histarr = new Array();
+var histarr = [];
 io.sockets.on('connection', function (socket){
     socket.on('sendchat',function(data){
         if (socket.room !== '' ){

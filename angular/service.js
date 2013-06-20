@@ -43,16 +43,37 @@ app.directive("showtalk", function(){
 			}
      }
 });
+app.directive("datasend", function(){
+	return {
+		  restrict: 'E',
+		  scope: {
+		  		y: '='
+		  },
+		  controller: function($scope,socket){
+		  		$scope.sendmessage = function(messageName){
+						socket.emit('sendchat', $scope[messageName]);
+						$scope[messageName] = '';
+					}
+					$scope.keypress = function($event, messageName){
+							if ($event.keyCode === 13){
+							$scope.sendmessage(messageName);
+						}
+					}
+		  },
+		  template: '<input type = "text" style = "width:200px; margin-top:10px" placeholder="your message" ng-model="y" ng-keydown="keypress($event, \'y\')"/>'
+			+'<button class= "btn btn-success" ng-click = "sendmessage(\'y\')">send</button>'
 
+	} 
+});
 app.controller('mainCtrl',function($scope, socket){
 	var client_name;
 	var talk_to_name;
 	var private_chatroom;
 	
 	$scope.conversations = [];
-	$scope.privatechats = [];
-	$scope.historytalks = [];
-	$scope.isprivate = false;
+	$scope.privatechats  = [];
+	$scope.historytalks  = [];
+	$scope.isprivate     = false;
 	function isPrivate(){
 			return $scope.isprivate;
 	}
@@ -61,14 +82,12 @@ app.controller('mainCtrl',function($scope, socket){
 	}
 
 	socket.on('connect', function(){
-		console.log("hello world");
 		client_name= prompt("What's your name?");
 		socket.emit('adduser',client_name);
 		$scope.users.push(client_name);
 	});
 	
 	socket.on('updateusers',function(data){
-		console.log("updateusers is called");
 		$scope.users = [];
 		for (var key in data){
 			 $scope.users.push(key);
@@ -92,7 +111,7 @@ app.controller('mainCtrl',function($scope, socket){
 			socket.emit('joinroom',talk_to_name, chatroom);
 			if (!isPrivate()){
 				  $scope.isprivate = isPublic();
-			}
+				}
 		}
 		else {
 			socket.emit('pmdeny', data, client_name);
@@ -108,15 +127,15 @@ app.controller('mainCtrl',function($scope, socket){
   	}
   });
 
-	$scope.sendmessage = function(messageName){
-		socket.emit('sendchat', $scope[messageName]);
-		$scope[messageName] = '';
-	}
-	$scope.keypress = function($event, messageName){
-		if ($event.keyCode === 13){
-			$scope.sendmessage(messageName);
-		}
-	}
+	// $scope.sendmessage = function(messageName){
+	// 	socket.emit('sendchat', $scope[messageName]);
+	// 	$scope[messageName] = '';
+	// }
+	// $scope.keypress = function($event, messageName){
+	// 	if ($event.keyCode === 13){
+	// 		$scope.sendmessage(messageName);
+	// 	}
+	// }
 	$scope.openprivatetalk = function(user){
 		talk_to_name = user;
 		private_chatroom = client_name+'_'+talk_to_name;
@@ -126,8 +145,6 @@ app.controller('mainCtrl',function($scope, socket){
 		}
 		socket.emit('pm', talk_to_name, client_name, private_chatroom);
 		socket.emit('joinroom', talk_to_name, private_chatroom);
-
-
 	}
 	$scope.showhistory = function(){
 		$scope.clearhistory();
