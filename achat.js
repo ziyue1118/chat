@@ -68,7 +68,7 @@ io.sockets.on('connection', function (socket){
         var histobj = new Object();
         var nid = onlineClients[nm];
         var tid = onlineClients[tm];
-        var result = [];
+        var result = new Array();
         redis.keys("*#"+ctrm+"#*", function(err,keys){
             if(err) return console.log(err);
             for (var i = 0; i<keys.length; i++){
@@ -83,7 +83,13 @@ io.sockets.on('connection', function (socket){
                 result.push(obj);
                 result.sort(date_sort_asc);
                 console.log(result);
-                io.sockets.socket(nid).emit('updatehistorychat', result.slice(result.length-10,result.length));
+                if (result.length > 10){
+                    io.sockets.socket(nid).emit('updatehistorychat', result.slice(result.length-10,result.length));
+                }
+                else
+                {
+                    io.sockets.socket(nid).emit('updatehistorychat', result);                        
+                }    
             });
 
         }

@@ -69,24 +69,27 @@ app.controller('mainCtrl',function($scope, socket){
 	var client_name;
 	var talk_to_name;
 	var private_chatroom;
-	
+
 	$scope.conversations = [];
 	$scope.privatechats  = [];
 	$scope.historytalks  = [];
 	$scope.isprivate     = false;
-	function isPrivate(){
-			return $scope.isprivate;
-	}
-	function isPublic(){
-		  return !isPrivate();
-	}
 
+	function switchprivate(flag){
+			if (flag){
+				return false;
+			}
+			else {
+				return true;
+			}
+	}
 	socket.on('connect', function(){
-		client_name= prompt("What's your name?");
+		$scope.users=[];
+		client_name=prompt("What's your name?");
 		socket.emit('adduser',client_name);
 		$scope.users.push(client_name);
 	});
-	
+
 	socket.on('updateusers',function(data){
 		$scope.users = [];
 		for (var key in data){
@@ -107,11 +110,10 @@ app.controller('mainCtrl',function($scope, socket){
 		private_chatroom = talk_to_name+'_'+client_name;
 		var cflag = confirm(data + ' wants to talk to you?');
 		if (cflag === true){
-	
+
 			socket.emit('joinroom',talk_to_name, chatroom);
-			if (!isPrivate()){
-				  $scope.isprivate = isPublic();
-				}
+			$scope.isprivate = switchprivate($scope.isprivate);
+			
 		}
 		else {
 			socket.emit('pmdeny', data, client_name);
@@ -127,22 +129,13 @@ app.controller('mainCtrl',function($scope, socket){
   	}
   });
 
-	// $scope.sendmessage = function(messageName){
-	// 	socket.emit('sendchat', $scope[messageName]);
-	// 	$scope[messageName] = '';
-	// }
-	// $scope.keypress = function($event, messageName){
-	// 	if ($event.keyCode === 13){
-	// 		$scope.sendmessage(messageName);
-	// 	}
-	// }
+
 	$scope.openprivatetalk = function(user){
 		talk_to_name = user;
 		private_chatroom = client_name+'_'+talk_to_name;
 		$scope.privatechats = []; 
-		if (!isPrivate()){
-		 	 $scope.isprivate = isPublic();
-		}
+	
+		$scope.isprivate = switchprivate($scope.isprivate);
 		socket.emit('pm', talk_to_name, client_name, private_chatroom);
 		socket.emit('joinroom', talk_to_name, private_chatroom);
 	}
@@ -156,9 +149,8 @@ app.controller('mainCtrl',function($scope, socket){
 	$scope.leaveprivateroom = function(){
 		socket.emit('leaveroom');
 		private_chatroom = '';
-		if (isPrivate()){
-			$scope.isprivate =	isPublic();
-		}
+		$scope.isprivate = switchprivate($scope.isprivate);
+	
 	}
 
 });
