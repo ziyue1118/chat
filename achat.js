@@ -1,4 +1,4 @@
-var port = 5004;
+var port = 5003;
 var app = require('express')();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
@@ -6,7 +6,7 @@ var redis = require("redis").createClient();
 var crypto = require('crypto');
 var tokenGenerator = require('./token_generator.js');
 
-console.log("listening on port "+port);
+console.log("listening on port " + port);
 server.listen(port);
 
 app.configure(function() {
@@ -27,6 +27,25 @@ var usernames = {};
 var onlineClients={};
 var rooms = {};
 var histarr = [];
+
+io.configure(function(){
+    io.set('authorization', function(handshakeData, callback){
+            console.log("username: "+ handshakeData.query.username);
+            console.log("token: " + handshakeData.query.token);
+            var username = handshakeData.query.username;
+            var token = handshakeData.query.token;
+        if (username === undefined) callback("Not a moonlyt user error");
+        if (username){
+            if (tokenGenerator(username) === token){
+                callback(null, true);
+            }
+            else {
+                callback(null, false);
+            }
+        }
+           }); 
+});
+
 io.sockets.on('connection', function (socket){
     socket.on('sendchat',function(data){
         if (socket.room !== '' ){
