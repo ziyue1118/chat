@@ -1,4 +1,5 @@
 var app = angular.module('chatapp',[]);
+
 app.factory('socket',function($rootScope){
 		var URL = window.location.protocol + "//" +window.location.host;
 		console.log("Connecting to " +URL);
@@ -69,12 +70,13 @@ app.controller('mainCtrl',function($scope, socket){
 	var client_name;
 	var talk_to_name;
 	var private_chatroom;
-
+   
 	$scope.conversations = [];
 	$scope.privatechats  = [];
 	$scope.historytalks  = [];
 	$scope.isprivate     = false;
-
+	
+	
 	function switchprivate(flag){
 			if (flag){
 				return false;
@@ -90,6 +92,15 @@ app.controller('mainCtrl',function($scope, socket){
 		$scope.users.push(client_name);
 	});
 
+	socket.on('giveaccess',function(data){
+		$scope.users=[];
+		client_name = data;
+		socket.emit('adduser',client_name);
+		$scope.users.push(client_name);
+	});
+	socket.on('denyaccess',function(){
+		document.location.href = "http://localhost:3000/demo";
+	});
 	socket.on('updateusers',function(data){
 		$scope.users = [];
 		for (var key in data){
@@ -134,7 +145,6 @@ app.controller('mainCtrl',function($scope, socket){
 		talk_to_name = user;
 		private_chatroom = client_name+'_'+talk_to_name;
 		$scope.privatechats = []; 
-	
 		$scope.isprivate = switchprivate($scope.isprivate);
 		socket.emit('pm', talk_to_name, client_name, private_chatroom);
 		socket.emit('joinroom', talk_to_name, private_chatroom);

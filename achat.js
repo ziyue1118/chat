@@ -1,8 +1,10 @@
-var port = 5002;
+var port = 5004;
 var app = require('express')();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
 var redis = require("redis").createClient();
+var crypto = require('crypto');
+var tokenGenerator = require('./token_generator.js');
 
 console.log("listening on port "+port);
 server.listen(port);
@@ -19,6 +21,7 @@ app.get('/', function(req,res){
     res.sendfile(__dirname + '/achat.html');
 
 });
+
 
 var usernames = {};
 var onlineClients={};
@@ -40,11 +43,22 @@ io.sockets.on('connection', function (socket){
         }
     });
 
+    socket.on('authorize',function(data){
+           var token = tokenGenerator(data.username);
+            console.log('#########'+token);
+            if (token === data.token){
+                io.sockets.emit('giveaccess', data.username);
+            }
+            else {
+                io.sockets.emit('denyaccess');
+            }
+    });
+  
     socket.on('adduser',function(username){
        socket.username = username;
        usernames[username] = username;
        socket.room = ''; 
-       onlineClients[username]=socket.id;
+       onlineClients[username] = socket.id;
        socket.emit('updatechat','SERVER','you have connected');
        socket.broadcast.emit('updatechat','SERVER',username+' has connected');
        io.sockets.emit('updateusers', usernames);
@@ -86,8 +100,7 @@ io.sockets.on('connection', function (socket){
                 if (result.length > 10){
                     io.sockets.socket(nid).emit('updatehistorychat', result.slice(result.length-10,result.length));
                 }
-                else
-                {
+                else{
                     io.sockets.socket(nid).emit('updatehistorychat', result);                        
                 }    
             });
