@@ -3,7 +3,7 @@ var app = angular.module('chatapp',[]);
 app.factory('socket',function($rootScope){
 		var URL = window.location.protocol + "//" +window.location.host;
 		console.log("Connecting to " +URL);
-		var socket = io.connect(URL);
+		var socket = io.connect(URL + "/chat");
 		return {
 			on:function (eventName, callback){
 				socket.on(eventName, function(){
@@ -91,6 +91,8 @@ app.controller('mainCtrl',function($scope, socket){
 		socket.emit('adduser',client_name);
 		$scope.users.push(client_name);
 	});
+   
+
 
 	socket.on('giveaccess',function(data){
 		$scope.users=[];
