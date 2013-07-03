@@ -1,4 +1,4 @@
-var port = 5003;
+var port = 5004;
 var app = require('express')();
 var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
@@ -47,6 +47,7 @@ var chatSocket = io.of('/chat');
 // });
 
 chatSocket.authorization(function (handshakeData, callback) {
+            console.log(handshakeData);
             console.log("username: "+ handshakeData.query.username);
             console.log("token: " + handshakeData.query.token);
             var username = handshakeData.query.username;
