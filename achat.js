@@ -27,20 +27,61 @@ var usernames = {};
 var onlineClients={};
 var rooms = {};
 var histarr = [];
-io.sockets.on('connection', function (socket){
+
+var chatSocket = io.of('/chat');
+var whiteSocket = io.of('/white');
+// io.configure(function(){
+//     io.set('authorization', function(handshakeData, callback){
+//             console.log("username: "+ handshakeData.query.username);
+//             console.log("token: " + handshakeData.query.token);
+//             var username = handshakeData.query.username;
+//             var token = handshakeData.query.token;
+//         if (username === undefined) callback("Not a moonlyt user error");
+//         if (username){
+//             if (tokenGenerator(username) === token){
+//                 callback(null, true);
+//             }
+//             else {
+//                 callback(null, false);
+//             }
+//         }
+//            }); 
+// });
+whiteSocket.authorization(function(handshakeData,callback){
+    console.log('This is for whiteSocket');
+    console.log(handshakeData);
+});
+
+chatSocket.authorization(function (handshakeData, callback) {
+            //console.log(handshakeData.referer);
+            console.log("This is for chatSocket");
+            console.log(handshakeData);
+            console.log("username: "+ handshakeData.query.username);
+            console.log("token: " + handshakeData.query.token);
+            var username = handshakeData.query.username;
+            var token = handshakeData.query.token;
+        if (username === undefined) callback("Not a moonlyt user error");
+        if (username){
+            if (tokenGenerator(username) === token){
+                callback(null, true);
+            }
+            else {
+                callback("you are not allowed", false);
+            }
+        }
+         
+});
+
+
+chatSocket.on('connection', function (socket){
     socket.on('sendchat',function(data){
         if (socket.room !== '' ){
-            io.sockets.in(socket.room).emit('updateprivatechat',socket.username,data);
+            chatSocket.in(socket.room).emit('updatechat',socket.username,data);
             jsonobj = { author: socket.username, time: recordtime(), msg: data };
             redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
 
         }
-        else {
-            io.sockets.emit('updatechat',socket.username, data);
-            jsonobj = { author: socket.username, time: recordtime(), msg: data };
-            redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
-
-        }
+      
     });
 
     socket.on('authorize',function(data){
@@ -54,26 +95,23 @@ io.sockets.on('connection', function (socket){
             }
     });
   
-    socket.on('adduser',function(username){
-       socket.username = username;
-       usernames[username] = username;
-       socket.room = ''; 
-       onlineClients[username] = socket.id;
-       socket.emit('updatechat','SERVER','you have connected');
-       socket.broadcast.emit('updatechat','SERVER',username+' has connected');
-       io.sockets.emit('updateusers', usernames);
 
-   });
-    socket.on('pm',function(to,message,chatroom){
-        var id = onlineClients[to];
-        //console.log("#####" + message);
-        io.sockets.socket(id).emit('confirmation', message, chatroom);
+    socket.on('adduser',function(username,room){
+        socket.username = username;
+        socket.room = room;
+        socket.join(room);
+        rooms[room]=[];
+        rooms[room].push(socket.username);
+        chatSocket.in(socket.room).emit('updateusers', usernames);
+        onlineClients[username] = socket.id;
+        socket.emit('updatechat','SERVER','you have connected');
+       //socket.broadcast.emit('updatechat','SERVER',username+' has connected');
+       //chatSocket.in(socket.room).emit('updateusers', usernames);
+
     });
+   
 
-    socket.on('pmdeny',function(to,message){
-       var id = onlineClients[to];
-       io.sockets.socket(id).emit('updateprivatechat', message, ' I cannot talk to you rigth now!');
-   });
+
 
     socket.on('history',function(nm, tm, ctrm){
         console.log(nm);
@@ -109,13 +147,15 @@ io.sockets.on('connection', function (socket){
         
     }); 
     });
-    socket.on('joinroom', function(to,newroom){
-        socket.room = newroom;
-        socket.join(newroom);
-        socket.emit('updateprivatechat','SERVER', 'You are talking to ' + to + ' in '+ newroom);
-        socket.broadcast.to(newroom).emit('updateprivatechat','SERVER',socket.username + ' agrees to talk with you in '+ socket.room);
+    // socket.on('joinroom', function(to,newroom){
+    //     socket.room = newroom;
+    //     socket.join(newroom);
+    //     socket.emit('updateprivatechat','SERVER', 'You are talking to ' + to + ' in '+ newroom);
+    //     socket.broadcast.to(newroom).emit('updateprivatechat','SERVER',socket.username + ' agrees to talk with you in '+ socket.room);
 
-    });
+    // });
+
+
     socket.on('leaveroom',function(){
         socket.broadcast.emit('updatechat','SERVER',socket.username + ' have left from '+socket.room);
         socket.leave(socket.room);
