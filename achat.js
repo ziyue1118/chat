@@ -47,13 +47,12 @@ var whiteSocket = io.of('/white');
 //         }
 //            }); 
 // });
-whiteSocket.authorization(function(handshakeData,callback){
-    console.log('This is for whiteSocket');
-    console.log(handshakeData);
-});
+// whiteSocket.authorization(function(handshakeData,callback){
+//     console.log('This is for whiteSocket');
+//     console.log(handshakeData);
+// });
 
 chatSocket.authorization(function (handshakeData, callback) {
-            //console.log(handshakeData.referer);
             console.log("This is for chatSocket");
             console.log(handshakeData);
             console.log("username: "+ handshakeData.query.username);
@@ -75,7 +74,7 @@ chatSocket.authorization(function (handshakeData, callback) {
 
 chatSocket.on('connection', function (socket){
     socket.on('sendchat',function(data){
-        if (socket.room !== '' ){
+        if (socket.room){
             chatSocket.in(socket.room).emit('updatechat',socket.username,data);
             jsonobj = { author: socket.username, time: recordtime(), msg: data };
             redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
@@ -84,29 +83,29 @@ chatSocket.on('connection', function (socket){
       
     });
 
-    socket.on('authorize',function(data){
-           var token = tokenGenerator(data.username);
-            console.log('#########'+token);
-            if (token === data.token){
-                io.sockets.emit('giveaccess', data.username);
-            }
-            else {
-                io.sockets.emit('denyaccess');
-            }
-    });
-  
-
     socket.on('adduser',function(username,room){
         socket.username = username;
-        socket.room = room;
-        socket.join(room);
-        rooms[room]=[];
-        rooms[room].push(socket.username);
-        chatSocket.in(socket.room).emit('updateusers', usernames);
-        onlineClients[username] = socket.id;
-        socket.emit('updatechat','SERVER','you have connected');
-       //socket.broadcast.emit('updatechat','SERVER',username+' has connected');
-       //chatSocket.in(socket.room).emit('updateusers', usernames);
+        if (room) {
+            socket.room = room;
+            socket.join(room);
+            if (rooms[room] === undefined){
+                rooms[room] = [socket.username];
+            }
+            else {
+                rooms[room].push(socket.username);
+            
+            }
+            chatSocket.in(socket.room).emit('updateusers', rooms[room]);
+            onlineClients[username] = socket.id;
+            socket.emit('updatechat','SERVER','you have connected');
+        }
+      
+        console.log("########");
+        console.log(rooms);
+        console.log("***"+rooms[room]);
+        
+        //socket.broadcast.emit('updatechat','SERVER',username+' has connected');
+        //chatSocket.in(socket.room).emit('updateusers', usernames);
 
     });
    
@@ -156,19 +155,27 @@ chatSocket.on('connection', function (socket){
     // });
 
 
-    socket.on('leaveroom',function(){
-        socket.broadcast.emit('updatechat','SERVER',socket.username + ' have left from '+socket.room);
-        socket.leave(socket.room);
-        socket.room = '';
-        socket.emit('updatechat','SERVER',socket.username + ' have connected');
-    });
+    // socket.on('leaveroom',function(){
+    //     socket.broadcast.emit('updatechat','SERVER',socket.username + ' have left from '+socket.room);
+    //     socket.leave(socket.room);
+    //     socket.room = '';
+    //     socket.emit('updatechat','SERVER',socket.username + ' have connected');
+    // });
 
     socket.on('disconnect',function(){
-        delete usernames[socket.username];
-        io.sockets.emit('updateusers',usernames);
-        socket.broadcast.emit('updatechat','SERVER',socket.username + ' has disconnected');
-        socket.leave(socket.room);
-        socket.emit('updatechat','SERVER','you have connected');
+        console.log("**************");
+        console.log(rooms[socket.room]);
+        if (rooms[socket.room]){
+            var index = rooms[socket.room].indexOf(socket.username);
+            rooms[socket.room].splice(index,1);
+            chatSocket.in(socket.room).emit('updateusers', rooms[socket.room]);
+            console.log("disconnect*******");
+            socket.leave(socket.room);
+        }
+
+        //io.sockets.emit('updateusers',rooms.room);
+        //socket.broadcast.emit('updatechat','SERVER',socket.username + ' has disconnected');
+        //socket.emit('updatechat','SERVER','you have connected');
     });
 });
 
