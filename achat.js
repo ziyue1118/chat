@@ -28,25 +28,10 @@ var onlineClients={};
 var rooms = {};
 var histarr = [];
 var chatSocket = io.of('/chat');
-// io.configure(function(){
-//     io.set('authorization', function(handshakeData, callback){
-//             console.log("username: "+ handshakeData.query.username);
-//             console.log("token: " + handshakeData.query.token);
-//             var username = handshakeData.query.username;
-//             var token = handshakeData.query.token;
-//         if (username === undefined) callback("Not a moonlyt user error");
-//         if (username){
-//             if (tokenGenerator(username) === token){
-//                 callback(null, true);
-//             }
-//             else {
-//                 callback(null, false);
-//             }
-//         }
-//            }); 
-// });
+var whiteSocket = io.of('/white');
 
 chatSocket.authorization(function (handshakeData, callback) {
+            console.log("This is for chatSocket");
             console.log(handshakeData);
             console.log("username: "+ handshakeData.query.username);
             console.log("token: " + handshakeData.query.token);
@@ -58,60 +43,70 @@ chatSocket.authorization(function (handshakeData, callback) {
                 callback(null, true);
             }
             else {
-                callback(null, false);
+                callback("you are not allowed", false);
             }
         }
-         
 });
 
 
 chatSocket.on('connection', function (socket){
-    socket.on('sendchat',function(data){
-        if (socket.room !== '' ){
-            chatSocket.in(socket.room).emit('updateprivatechat',socket.username,data);
-            jsonobj = { author: socket.username, time: recordtime(), msg: data };
-            redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
 
-        }
-        else {
-            chatSocket.emit('updatechat',socket.username, data);
-            jsonobj = { author: socket.username, time: recordtime(), msg: data };
-            redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
+    socket.on('joinroom', function(username, room){
+        socket.username = username;
 
-        }
-    });
+        if (room) {
+            socket.room = room;
+            socket.join(room);
 
-    socket.on('authorize',function(data){
-           var token = tokenGenerator(data.username);
-            console.log('#########'+token);
-            if (token === data.token){
-                chatSocket.emit('giveaccess', data.username);
+            console.log("**********************************")
+            console.log(username + " joined room " + room);
+            if (rooms[room] === undefined){
+                rooms[room] = [socket.username];
             }
             else {
-                chatSocket.emit('denyaccess');
+                rooms[room].push(socket.username);
+            
             }
-    });
-  
-    socket.on('adduser',function(username){
-       socket.username = username;
-       usernames[username] = username;
-       socket.room = ''; 
-       onlineClients[username] = socket.id;
-       socket.emit('updatechat','SERVER','you have connected');
-       socket.broadcast.emit('updatechat','SERVER',username+' has connected');
-       chatSocket.emit('updateusers', usernames);
-
-   });
-    socket.on('pm',function(to,message,chatroom){
-        var id = onlineClients[to];
-        //console.log("#####" + message);
-        chatSocket.socket(id).emit('confirmation', message, chatroom);
+            chatSocket.in(socket.room).emit('updateusers', rooms[room]);
+            onlineClients[username] = socket.id;
+            socket.broadcast.to(socket.room).emit('updatechat', username, 'has joined the lesson')
+        }
     });
 
-    socket.on('pmdeny',function(to,message){
-       var id = onlineClients[to];
-       chatSocket.socket(id).emit('updateprivatechat', message, ' I cannot talk to you rigth now!');
-   });
+    socket.on('sendchat',function(data){
+        if (socket.room){
+            chatSocket.in(socket.room).emit('updatechat',socket.username,data);
+            jsonobj = { author: socket.username, time: recordtime(), msg: data };
+            redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
+        }
+
+    });
+/*
+    socket.on('adduser',function(username,room){
+        socket.username = username;
+        if (room) {
+            socket.room = room;
+            socket.join(room);
+            if (rooms[room] === undefined){
+                rooms[room] = [socket.username];
+            }
+            else {
+                rooms[room].push(socket.username);
+            
+            }
+            chatSocket.in(socket.room).emit('updateusers', rooms[room]);
+            onlineClients[username] = socket.id;
+            socket.emit('updatechat','SERVER','you have connected');
+        }
+      
+        console.log("########");
+        console.log(rooms);
+        console.log("***"+rooms[room]);
+        
+        //socket.broadcast.emit('updatechat','SERVER',username+' has connected');
+        //chatSocket.in(socket.room).emit('updateusers', usernames);
+
+    });*/
 
     socket.on('history',function(nm, tm, ctrm){
         console.log(nm);
@@ -126,47 +121,50 @@ chatSocket.on('connection', function (socket){
             for (var i = 0; i<keys.length; i++){
                 console.log(keys[i]);
 
-            //var histarr = new Array();
-            redis.hgetall(keys[i],function(err, obj){
-                histobj.author = obj.author;
-                histobj.time = obj.time;
-                histobj.message = obj.msg;
-                histobj[i]=obj;
-                result.push(obj);
-                result.sort(date_sort_asc);
-                console.log(result);
-                if (result.length > 10){
-                    chatSocket.socket(nid).emit('updatehistorychat', result.slice(result.length-10,result.length));
-                }
-                else{
-                    chatSocket.socket(nid).emit('updatehistorychat', result);                        
-                }    
-            });
+                //var histarr = new Array();
+                redis.hgetall(keys[i],function(err, obj){
+                    histobj.author = obj.author;
+                    histobj.time = obj.time;
+                    histobj.message = obj.msg;
+                    histobj[i]=obj;
+                    result.push(obj);
+                    result.sort(date_sort_asc);
+                    console.log(result);
+                    if (result.length > 10){
+                        chatSocket.socket(nid).emit('updatehistorychat', result.slice(result.length-10,result.length));
+                    }
+                    else{
+                        chatSocket.socket(nid).emit('updatehistorychat', result);                        
+                    }    
+                });
 
-        }
+            }
         
-    }); 
+        }); 
     });
-    socket.on('joinroom', function(to,newroom){
-        socket.room = newroom;
-        socket.join(newroom);
-        socket.emit('updateprivatechat','SERVER', 'You are talking to ' + to + ' in '+ newroom);
-        socket.broadcast.to(newroom).emit('updateprivatechat','SERVER',socket.username + ' agrees to talk with you in '+ socket.room);
+    // socket.on('joinroom', function(to,newroom){
+    //     socket.room = newroom;
+    //     socket.join(newroom);
+    //     socket.emit('updateprivatechat','SERVER', 'You are talking to ' + to + ' in '+ newroom);
+    //     socket.broadcast.to(newroom).emit('updateprivatechat','SERVER',socket.username + ' agrees to talk with you in '+ socket.room);
 
-    });
-    socket.on('leaveroom',function(){
-        socket.broadcast.emit('updatechat','SERVER',socket.username + ' have left from '+socket.room);
-        socket.leave(socket.room);
-        socket.room = '';
-        socket.emit('updatechat','SERVER',socket.username + ' have connected');
-    });
+    // });
 
     socket.on('disconnect',function(){
-        delete usernames[socket.username];
-        chatSocket.emit('updateusers',usernames);
-        socket.broadcast.emit('updatechat','SERVER',socket.username + ' has disconnected');
-        socket.leave(socket.room);
-        socket.emit('updatechat','SERVER','you have connected');
+
+        console.log("**************");
+        console.log(rooms[socket.room]);
+        if (rooms[socket.room]){
+            var index = rooms[socket.room].indexOf(socket.username);
+            rooms[socket.room].splice(index,1);
+            chatSocket.in(socket.room).emit('updateusers', rooms[socket.room]);
+            console.log("disconnect*******");
+            socket.leave(socket.room);
+        }
+
+        //io.sockets.emit('updateusers',rooms.room);
+        //socket.broadcast.emit('updatechat','SERVER',socket.username + ' has disconnected');
+        //socket.emit('updatechat','SERVER','you have connected');
     });
 });
 
