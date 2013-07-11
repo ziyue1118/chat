@@ -71,8 +71,8 @@ chatSocket.on('connection', function (socket){
         }
     });
 
-    socket.on('isTyping', function(bool){
-        socket.broadcast.to(socket.room).emit('isTyping', bool);
+    socket.on('isTyping', function(bool, partner){
+        socket.broadcast.to(socket.room).emit('isTyping', bool, partner);
     });
 
     socket.on('sendchat',function(data, time){
