@@ -22,13 +22,12 @@ app.get('/', function(req,res){
 
 });
 
-
 var usernames = {};
 var onlineClients={};
 var rooms = {};
 var histarr = [];
 var chatSocket = io.of('/chat');
-var whiteSocket = io.of('/white');
+var whiteSocket = io.of('/whiteboard');
 
 chatSocket.authorization(function (handshakeData, callback) {
             console.log("This is for chatSocket");
@@ -47,7 +46,6 @@ chatSocket.authorization(function (handshakeData, callback) {
             }
         }
 });
-
 
 chatSocket.on('connection', function (socket){
 
@@ -91,32 +89,6 @@ chatSocket.on('connection', function (socket){
         }
 
     });
-/*
-    socket.on('adduser',function(username,room){
-        socket.username = username;
-        if (room) {
-            socket.room = room;
-            socket.join(room);
-            if (rooms[room] === undefined){
-                rooms[room] = [socket.username];
-            }
-            else {
-                rooms[room].push(socket.username);
-            
-            }
-            chatSocket.in(socket.room).emit('updateusers', rooms[room]);
-            onlineClients[username] = socket.id;
-            socket.emit('updatechat','SERVER','you have connected');
-        }
-      
-        console.log("########");
-        console.log(rooms);
-        console.log("***"+rooms[room]);
-        
-        //socket.broadcast.emit('updatechat','SERVER',username+' has connected');
-        //chatSocket.in(socket.room).emit('updateusers', usernames);
-
-    });*/
 
     socket.on('history',function(nm, tm, ctrm){
         console.log(nm);
@@ -152,13 +124,6 @@ chatSocket.on('connection', function (socket){
         
         }); 
     });
-    // socket.on('joinroom', function(to,newroom){
-    //     socket.room = newroom;
-    //     socket.join(newroom);
-    //     socket.emit('updateprivatechat','SERVER', 'You are talking to ' + to + ' in '+ newroom);
-    //     socket.broadcast.to(newroom).emit('updateprivatechat','SERVER',socket.username + ' agrees to talk with you in '+ socket.room);
-
-    // });
 
     socket.on('disconnect',function(){
 
@@ -171,10 +136,6 @@ chatSocket.on('connection', function (socket){
             console.log("disconnect*******");
             socket.leave(socket.room);
         }
-
-        //io.sockets.emit('updateusers',rooms.room);
-        //socket.broadcast.emit('updatechat','SERVER',socket.username + ' has disconnected');
-        //socket.emit('updatechat','SERVER','you have connected');
     });
 });
 
