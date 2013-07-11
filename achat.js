@@ -32,7 +32,7 @@ var whiteSocket = io.of('/white');
 
 chatSocket.authorization(function (handshakeData, callback) {
             console.log("This is for chatSocket");
-            console.log(handshakeData);
+            //console.log(handshakeData);
             console.log("username: "+ handshakeData.query.username);
             console.log("token: " + handshakeData.query.token);
             var username = handshakeData.query.username;
@@ -73,16 +73,21 @@ chatSocket.on('connection', function (socket){
         }
     });
 
-    socket.on('sendchat',function(data, index){
+    socket.on('isTyping', function(bool){
+        socket.broadcast.to(socket.room).emit('isTyping', bool);
+    });
+
+    socket.on('sendchat',function(data, time){
         if (socket.room){
-            socket.broadcast.to(socket.room).emit('updatechat',socket.username,data);
-            jsonobj = { author: socket.username, time: recordtime(), msg: data };
-            redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
+            console.log(data);
 
             setTimeout(function(){
-                console.log(socket);
-                socket.emit('ackchat', index);
-            }, 3000)
+                //console.log(socket);
+                socket.broadcast.to(socket.room).emit('updatechat',socket.username,data);
+                jsonobj = { author: socket.username, time: recordtime(), msg: data };
+                redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
+                socket.emit('ackchat', time);
+            }, 1500)
         }
 
     });
