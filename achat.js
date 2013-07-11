@@ -75,14 +75,13 @@ chatSocket.on('connection', function (socket){
 
     socket.on('sendchat',function(data, index){
         if (socket.room){
-            socket.broadcast.to(socket.room).emit('updatechat',socket.username,data);
-            jsonobj = { author: socket.username, time: recordtime(), msg: data };
-            redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
-
+            
             setTimeout(function(){
-                console.log(socket);
+                socket.broadcast.to(socket.room).emit('updatechat',socket.username,data);
+                jsonobj = { author: socket.username, time: recordtime(), msg: data };
+                redis.hmset(socket.username+"#"+socket.room+"#"+currentTime(), jsonobj);
                 socket.emit('ackchat', index);
-            }, 3000)
+            }, 1500)
         }
 
     });
