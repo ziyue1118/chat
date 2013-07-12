@@ -13,6 +13,10 @@ var routes = require('./routes');
 var user = require('./routes/user');
 /***/
 
+
+io.set('log level', 1);
+
+
 console.log("listening on port " + port);
 server.listen(port);
 
@@ -74,9 +78,14 @@ chatSocket.authorization(function (handshakeData, callback) {
 
 whiteboardSocket.authorization(function (handshakeData, callback) {
     console.log("************authorizing whiteboard");
+    console.log(handshakeData);
 
     var username = handshakeData.query.username;
     var token = handshakeData.query.token;
+    console.log("username:");
+    console.log(username);
+    console.log("token:");
+    console.log(token);
     if (username === undefined) callback("Not a moonlyt user error");
     if (username){
         if (tokenGenerator(username) === token){
@@ -89,15 +98,17 @@ whiteboardSocket.authorization(function (handshakeData, callback) {
         
 });
 
+
+var usernames = {};
+var onlineClients={};
+var rooms = {};
+var histarr = [];
+
 chatSocket.on('connection', function (socket){
 
     console.log("**************");
     console.log("CONNECTED TO CHAT");
 
-    var usernames = {};
-    var onlineClients={};
-    var rooms = {};
-    var histarr = [];
 
     socket.on('joinroom', function(username, room){
         socket.username = username;
@@ -115,6 +126,9 @@ chatSocket.on('connection', function (socket){
                 rooms[room].push(socket.username);
             
             }
+
+            console.log("users are:");
+            console.log(rooms[room]);
             chatSocket.in(socket.room).emit('updateusers', rooms[room]);
             onlineClients[username] = socket.id;
             socket.broadcast.to(socket.room).emit('updatechat', username, 'has joined the lesson')
