@@ -1,0 +1,462 @@
+
+<html>
+<head>
+<<<<<<< HEAD
+<title>LinkedIn JavaScript API Hello World</title>
+
+<!-- 1. Include the LinkedIn JavaScript API and define a onLoad callback function -->
+<script type="text/javascript" src="http://platform.linkedin.com/in.js">
+  api_key: k26u27kknj9e  
+  onLoad: onLinkedInLoad
+  authorize: true
+</script>
+
+<script type="text/javascript">
+  // 2. Runs when the JavaScript framework is loaded
+  function onLinkedInLoad() {
+    IN.Event.on(IN, "auth", onLinkedInAuth);
+  }
+
+  // 2. Runs when the viewer has authenticated
+  function onLinkedInAuth() {
+    IN.API.Profile("me")
+      .fields("firstName", "lastName", "industry", "location:(name)", "specialties", "positions", "picture-url", "honors", "publications", "languages", "skills", "educations", "three-current-positions", "three-past-positions")
+      .result(displayProfiles);
+  }
+
+  // 2. Runs when the Profile() API call returns successfully
+  function displayProfiles(profiles) {
+    member = profiles.values[0];
+    document.getElementById("profiles").innerHTML = 
+      "<p id=\"" + member.id + "\">Hello " +  member.firstName + " " + member.lastName + "</p>";
+  }
+</script>
+=======
+  <title>Moonlyt Whiteboard</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=9">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <link rel="stylesheet" href="http://code.jquery.com/mobile/1.3.0/jquery.mobile-1.3.0.min.css"/>
+  <script src="http://code.jquery.com/mobile/1.3.0/jquery.mobile-1.3.0.min.js"></script>
+
+  <style>
+  html, body {
+    width: 100%;
+    height: 100%;
+  }
+
+  #sketch {
+    width:800px;
+    height:450px;
+    border: 10px solid gray;
+    height: 100%;
+    position: relative;
+  }
+
+  #tmp_canvas {
+    position: absolute;
+    width:800px;
+    height:450px;
+    left: 0px; right: 0;
+    bottom: 0; top: 2px;
+    cursor: crosshair;
+  }
+  </style>
+
+  <script>
+
+  $(document).on('pageinit', '#home', function () {
+      // code 
+      var _menuLoaded = false;
+      $('#menuPanel').load('menu.html', function () {
+        $(this).find(":jqmData(role=listview)").listview();
+        $(this).trigger("updatelayout");
+        $.mobile.loading("hide");
+        _menuLoaded = true;
+      });
+
+      $("#menuPanel").on("panelopen", function (event, ui) {
+        if (!_menuLoaded) {
+          $.mobile.loading("show");
+          return;
+        }
+        $("#menuPanel").off("panelopen");
+      });
+    });
+
+  </script>
+
+
+>>>>>>> 139d755eae93eecf9ba2a308ec63ffb0df34a0bd
+</head>
+<body>
+<<<<<<< HEAD
+=======
+  <div data-role="page">
+
+
+
+    <div data-role="header" style="text-align:center; line-height:2em;">
+      Whiteboard
+    </div>
+
+    <div data-role="content">
+
+      <a href="#menuPanel">Menu</a>
+      <br>
+
+
+      <div data-role="panel" id="menuPanel" data-display="overlay" data-position="right">
+
+        <form>
+          <label for="line-width">Line Width:</label>
+          <input type="range" name="line-width" id="line-width" min="2" max="15" value="5" data-show-value="true" data-popup-enabled="true">
+        </form>
+
+        <hr>
+
+        <form>
+          <select id="color-select">
+            <option value="#000000">Black</option>
+            <option value="#F50000">Red</option>
+            <option value="#29AB09">Green</option>
+            <option value="#0746DE">Blue</option>
+            <option value="#E0C412">Yellow</option>
+
+          </select>
+        </form>
+
+      </div>
+
+      <div id="sketch">
+        <canvas id="poop" width="800" height="450" style="background:#ADC2EB"></canvas>
+      </div>
+
+      <input id="scroll-toggle" type="checkbox">TURN SCROLL ON</input><br>
+      <input id="eraser-toggle" type="checkbox">ERASER</input><br>
+      <ul id="console"></ul>
+
+    </div>
+
+
+
+    <script>  
+
+    $(function() {
+
+      var iPadAgent = navigator.userAgent.match(/iPad/i) != null;
+      var iPodAgent = navigator.userAgent.match(/iPhone/i) != null;
+      var AndroidAgent = navigator.userAgent.match(/Android/i) != null;
+      var webOSAgent = navigator.userAgent.match(/webOS/i) != null;
+      var lineWidth = 5;
+      var lineColor = "#000000"
+
+      // Pencil Points
+      // var ppts = [];
+      
+      var socket = io.connect('http://tranquil-reef-3806.herokuapp.com/');
+      // var socket = io.connect('http://localhost');
+      socket.on('draw', function(points) {
+        drawShit(points.mid, points.prev, points.curr);
+      })
+      
+      var doc = $(document)
+      var canvas = $('#poop');
+      var ctx = canvas[0].getContext('2d');
+      var drawing = false;
+
+      var sketch = $('#sketch')[0];
+      var sketch_style = getComputedStyle(sketch);
+      canvas.width = parseInt(sketch_style.getPropertyValue('width'));
+      canvas.height = parseInt(sketch_style.getPropertyValue('height'));
+
+  // Creating a tmp canvas
+  var tmp_canvas = document.createElement('canvas');
+  var tmp_ctx = tmp_canvas.getContext('2d');
+  tmp_canvas.id = 'tmp_canvas';
+  tmp_canvas.width = canvas.width;
+  tmp_canvas.height = canvas.height;
+
+  sketch.appendChild(tmp_canvas);
+
+  var mouse = {x: 0, y: 0};
+  var last_mouse = {x: 0, y: 0};
+
+  // Pencil Points
+  var ppts = [];
+
+  /* Mouse Capturing Work */
+  $("#tmp_canvas").on('mousemove touchmove', function(e) {
+    mouse.x = typeof e.offsetX !== 'undefined' ? e.offsetX : e.layerX;
+    mouse.y = typeof e.offsetY !== 'undefined' ? e.offsetY : e.layerY;
+
+    onPaint();
+  });
+
+
+  /* Drawing on Paint App */
+  tmp_ctx.lineWidth = 5;
+  tmp_ctx.lineJoin = 'round';
+  tmp_ctx.lineCap = 'round';
+
+  // tmp_ctx.strokeStyle = 'blue';
+  // tmp_ctx.fillStyle = 'blue';
+  
+  $("#tmp_canvas").on('mousedown touchstart', function(e) {
+    // tmp_canvas.addEventListener('mousemove', onPaint, false);
+    if (!scrollingOn()) {
+      e.preventDefault();
+      drawing = true;
+      
+      mouse.x = typeof e.offsetX !== 'undefined' ? e.offsetX : e.layerX;
+      mouse.y = typeof e.offsetY !== 'undefined' ? e.offsetY : e.layerY;
+      
+      ppts.push({x: mouse.x, y: mouse.y});
+      if ( shouldRecordMovement(e)){
+        onPaint();  
+      }
+    }
+  });
+  
+  $(document).on('mouseup touchend', function() {
+    // tmp_canvas.removeEventListener('mousemove', onPaint, false);
+    drawing = false;
+    // Writing down to real canvas now
+    ctx.drawImage(tmp_canvas, 0, 0);
+    // Clearing tmp canvas
+    tmp_ctx.clearRect(0, 0, tmp_canvas.width, tmp_canvas.height);
+    
+    // Emptying up Pencil Points
+    ppts = [];
+  });
+  
+
+  var onPaint = function() {
+
+    if(drawing){
+
+      if(isErasing()){
+        tmp_ctx.strokeStyle = canvas.css('background-color');
+      };
+    // if (isErasing()) {
+    //   tmp_ctx.globalCompositeOperation="destination-out";
+    // } else {
+    //   tmp_ctx.globalCompositeOperation="source-over";
+    // }
+        // Saving all the points in an array
+        ppts.push({x: mouse.x, y: mouse.y, erasing: isErasing()});
+
+        if (ppts.length < 3) {
+          var b = ppts[0];
+          tmp_ctx.beginPath();
+        //ctx.moveTo(b.x, b.y);
+        //ctx.lineTo(b.x+50, b.y+50);
+        tmp_ctx.arc(b.x, b.y, tmp_ctx.lineWidth / 2, 0, Math.PI * 2, !0);
+        tmp_ctx.fill();
+        tmp_ctx.closePath();
+        
+        return;
+      }
+      
+      // Tmp canvas is always cleared up before drawing.
+      tmp_ctx.clearRect(0, 0, tmp_canvas.width, tmp_canvas.height);
+      
+      tmp_ctx.beginPath();
+      tmp_ctx.moveTo(ppts[0].x, ppts[0].y);
+      
+      for (var i = 1; i < ppts.length - 2; i++) {
+        var c = (ppts[i].x + ppts[i + 1].x) / 2;
+        var d = (ppts[i].y + ppts[i + 1].y) / 2;
+        
+        tmp_ctx.quadraticCurveTo(ppts[i].x, ppts[i].y, c, d);
+      }
+      
+      // For the last 2 points
+      tmp_ctx.quadraticCurveTo(
+        ppts[i].x,
+        ppts[i].y,
+        ppts[i + 1].x,
+        ppts[i + 1].y
+        );
+      tmp_ctx.stroke();
+
+    }
+
+    
+  };
+
+
+
+
+
+
+
+
+      // // previous and current points
+      // var mid = {};
+      // var prev = {};
+      // var curr = {};
+      
+      // var i = 0;
+      // doc.on('mouseup touchend', function() {
+      //   println("mouseup triggered");
+      //   drawing = false;
+      //   i = 0;
+
+      //   // Emptying up Pencil Points
+      //   ppts = [];  
+      // })
+
+      // canvas.on('mousedown touchstart', function(e) {
+      //   if (!scrollingOn()) {
+      //     e.preventDefault();
+      //     println("mousedown triggered")
+      //     drawing = true;
+      //     curr = createPoint(e);
+      //     ppts.push({x: curr.x, y: curr.y});
+
+      //     prev = curr;
+      //   } 
+      // })
+
+      // canvas.on('mousemove touchmove', function(e) {
+      //   if (drawing && shouldRecordMovement(e)) {
+
+      //     prev = curr;
+      //     if(i > 0){ prev = mid; }
+      //     i++;
+      //     mid = curr
+      //     curr = createPoint(e);
+      //     // mid = { x: (prev.x + curr.x)/2, y: (prev.y + curr.y)/2 };
+
+      //     drawShit(mid, prev, curr);
+      //     socket.emit('drawing', { prev: prev, curr: curr, mid: mid });
+      //   }
+      // })
+
+      // $("#menuPanel").on("mouseup", ".ui-slider", function(e) {
+      //   console.log("SETTING THE VAL TO " + $('#line-width').val())
+      //   lineWidth = $("#line-width").val()
+      // });
+$("#line-width").change( function(e) {
+  console.log("SETTING THE VAL TO " + $('#line-width').val())
+  tmp_ctx.lineWidth = $("#line-width").val()
+});
+
+$("#color-select").change( function(e) {
+  console.log("SETTING THE color ")
+  tmp_ctx.strokeStyle = $("#color-select").val()
+});
+
+function scrollingOn() {
+  return $('#scroll-toggle').prop('checked')
+}
+
+function hasTouch() {
+  return iPadAgent || iPodAgent || AndroidAgent || webOSAgent;
+}
+
+      // only allow drawing with 1 finger on touch devices.
+      function shouldRecordMovement(e) {
+        if (hasTouch() && e.originalEvent.touches.length > 1) {
+          return false;
+        }
+        return true;
+      }
+      
+      function isErasing() {
+        return $('#eraser-toggle').prop('checked');
+      }
+      
+      // function createPoint(e) {
+      //   var x, y;
+      //   if (hasTouch()){
+      //     x = e.originalEvent.touches[0].pageX;
+      //     y = e.originalEvent.touches[0].pageY;
+      //   } else {
+      //     x = e.pageX;
+      //     y = e.pageY;
+      //   }
+
+      //   return { 
+      //     x: x - canvas.offset().left, 
+      //     y: y - canvas.offset().top, 
+      //     erasing: isErasing(), 
+      //     lineWidth: lineWidth,
+      //     color: lineColor
+      //   };
+      // }
+      
+      // // from has x and y properties
+      // // to has x and y properties
+      // function drawShit(mid, from, to) {
+
+      //   // Saving all the points in an array
+      //   ppts.push({x: curr.x, y: curr.y});
+
+      //   if (ppts.length < 3) {
+      //         var b = ppts[0];
+      //         ctx.beginPath();
+      //         //context.moveTo(b.x, b.y);
+      //         //context.lineTo(b.x+50, b.y+50);
+      //         ctx.arc(b.x, b.y, ctx.lineWidth / 2, 0, Math.PI * 2, !0);
+      //         ctx.fill();
+      //         ctx.closePath();
+
+      //         return;
+      //       }
+
+>>>>>>> 139d755eae93eecf9ba2a308ec63ffb0df34a0bd
+
+<!-- 3. Displays a button to let the viewer authenticate -->
+<script type="IN/Login"></script>
+
+<!-- 4. Placeholder for the greeting -->
+<div id="profiles"></div>
+
+<<<<<<< HEAD
+=======
+      //   ctx.strokeStyle = to.color;
+      //   ctx.lineWidth = to.lineWidth;
+
+
+      //   //ctx.fillStyle = rgb(244, 244, 244);
+      //   ctx.beginPath();
+      //   // context.moveTo(from.x, from.y);
+      //   // context.lineTo(to.x, to.y);
+      //   // context.moveTo(from.x, from.y);
+      //   // context.quadraticCurveTo(mid.x, mid.y, to.x, to.y);
+      //   // context.stroke();
+      //   // context.closePath();
+
+      //   ctx.moveTo(ppts[0].x, ppts[0].y);
+
+      //   for (var i = 1; i < ppts.length - 2; i++) {
+      //     var c = (ppts[i].x + ppts[i + 1].x) / 2;
+      //     var d = (ppts[i].y + ppts[i + 1].y) / 2;
+
+      //     ctx.quadraticCurveTo(ppts[i].x, ppts[i].y, c, d);
+      //   }
+
+      //   // For the last 2 points
+      //   ctx.quadraticCurveTo(
+      //     ppts[i].x,
+      //     ppts[i].y,
+      //     ppts[i + 1].x,
+      //     ppts[i + 1].y
+      //   );
+      //   ctx.stroke();
+      //   context.closePath();   
+      // }
+      
+      // function println(message) {
+      //   // $('#console').append("<li>" + message + "</li>")
+      // }
+      
+    })
+</script>
+</div>
+>>>>>>> 139d755eae93eecf9ba2a308ec63ffb0df34a0bd
+</body>
+</html>
