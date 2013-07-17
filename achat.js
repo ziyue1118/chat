@@ -40,10 +40,10 @@ app.configure(function() {
 });
 
 //added for whiteboard
-io.configure(function () { 
-    io.set("transports", ["xhr-polling"]); 
-    io.set("polling duration", 10); 
-});
+// io.configure(function () { 
+//     io.set("transports", ["xhr-polling"]); 
+//     io.set("polling duration", 10); 
+// });
 
 app.get('/', function(req,res){
     //initially for chat
@@ -79,22 +79,22 @@ chatSocket.authorization(function (handshakeData, callback) {
 whiteboardSocket.authorization(function (handshakeData, callback) {
     console.log("************authorizing whiteboard");
     console.log(handshakeData);
-
-    var username = handshakeData.query.username;
-    var token = handshakeData.query.token;
-    console.log("username:");
-    console.log(username);
-    console.log("token:");
-    console.log(token);
-    if (username === undefined) callback("Not a moonlyt user error");
-    if (username){
-        if (tokenGenerator(username) === token){
-            callback(null, true);
-        }
-        else {
-            callback("AUTHENTICATION_FAILED", false);
-        }
-    }
+    callback(null, true);
+    // var username = handshakeData.query.username;
+    // var token = handshakeData.query.token;
+    // console.log("username:");
+    // console.log(username);
+    // console.log("token:");
+    // console.log(token);
+    // if (username === undefined) callback("Not a moonlyt user error");
+    // if (username){
+    //     if (tokenGenerator(username) === token){
+    //         callback(null, true);
+    //     }
+    //     else {
+    //         callback("AUTHENTICATION_FAILED", false);
+    //     }
+    // }
         
 });
 
@@ -103,7 +103,7 @@ var usernames = {};
 var onlineClients={};
 var rooms = {};
 var histarr = [];
-
+var canvasStrokes = [];
 chatSocket.on('connection', function (socket){
 
     console.log("**************");
@@ -114,25 +114,35 @@ chatSocket.on('connection', function (socket){
         socket.username = username;
 
         if (room) {
+            room = String(room);
             socket.room = room;
             socket.join(room);
 
-            console.log("**********************************")
+            console.log("**********************************");
             console.log(username + " joined room " + room);
             if (rooms[room] === undefined){
-                rooms[room] = [socket.username];
+                rooms[room] = [];
+                rooms[room].push(socket.username);
             }
             else {
-                rooms[room].push(socket.username);
-            
+                var usernameExist = false;
+                for (i = 0; i< rooms[room].length; i++){
+                    if (rooms[room][i] === socket.username){
+                        usernameExist = true;
+                    }
+                }
+                if (!usernameExist){
+                    rooms[room].push(socket.username);
+                }
             }
 
             console.log("users are:");
-            console.log(rooms[room]);
+            console.log(rooms);
             chatSocket.in(socket.room).emit('updateusers', rooms[room]);
             onlineClients[username] = socket.id;
-            socket.broadcast.to(socket.room).emit('updatechat', username, 'has joined the lesson')
-        }
+            socket.broadcast.to(socket.room).emit('updatechat', username, 'has joined the lesson');
+
+        }   
     });
 
     socket.on('isTyping', function(bool, partner){
@@ -191,38 +201,34 @@ chatSocket.on('connection', function (socket){
 
     socket.on('disconnect',function(){
 
-        console.log("**************");
+        console.log("********disconnect start********");
         console.log(rooms[socket.room]);
         if (rooms[socket.room]){
             var index = rooms[socket.room].indexOf(socket.username);
             rooms[socket.room].splice(index,1);
+            console.log(rooms);
             chatSocket.in(socket.room).emit('updateusers', rooms[socket.room]);
-            console.log("disconnect*******");
+            console.log("*********disconnect end*******");
             socket.leave(socket.room);
         }
     });
+    
 });
 
 whiteboardSocket.on('connection', function (socket){
     console.log("**************");
     console.log("CONNECTED TO WHITEBOARD");
     //lucas' whiteboard socket code goes here
-    var users = [];
-
-    socket.on('userConnect', function(data){
-        users.push(data.uid);
-        console.log("hi");
-    });
+    socket.emit('initWhiteboard', canvasStrokes);
 
     socket.on('disconnect', function() {
-        console.log("disconnect");
+        console.log("$$$$$whiteboard disconnect$$$$$$");
     });
 
     // console.log(io.sockets.clients());
 
     // there are people there.
     // if (users.length > 0)
-    users.push(socket.id);
 
     // Start listening for mouse move events
     socket.on('mousemove', function (data) {
@@ -246,7 +252,9 @@ whiteboardSocket.on('connection', function (socket){
 
     socket.on('redo', function(data) {
         socket.broadcast.emit('redo', data);
-    });
+    });     
+
+   
 });
 
 function currentTime() {
